@@ -5,14 +5,16 @@ export type DomainStatus = "pending" | "active" | "error" | "stopped";
 export interface Domain {
   id: string;
   hostname: string;
-  origin_url: string;
+  originUrl: string;
   status: DomainStatus;
-  metrics_port: number;
+  metricsPort: number;
   pid: number;
-  restart_count: number;
-  last_error?: string;
-  created_at: string;
-  updated_at: string;
+  restartCount: number;
+  lastError?: string;
+  createdAt: string;
+  updatedAt: string;
+  cloudflareTunnelId?: string;
+  dnsRecordId?: string;
 }
 
 export class ApiError extends Error {
@@ -71,12 +73,12 @@ export function getDomain(id: string): Promise<Domain> {
   return unwrap(client.get<Domain>(`/api/domains/${id}`));
 }
 
-export function createDomain(input: { hostname: string; origin_url: string }): Promise<Domain> {
+export function createDomain(input: { hostname: string; originUrl: string }): Promise<Domain> {
   return unwrap(client.post<Domain>("/api/domains", input));
 }
 
 export function updateOrigin(id: string, originUrl: string): Promise<Domain> {
-  return unwrap(client.put<Domain>(`/api/domains/${id}`, { origin_url: originUrl }));
+  return unwrap(client.put<Domain>(`/api/domains/${id}`, { originUrl }));
 }
 
 export function deleteDomain(id: string): Promise<void> {

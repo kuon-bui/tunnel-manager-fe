@@ -28,7 +28,7 @@ export function CreateDomainDialog() {
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     createDomain.mutate(
-      { hostname, origin_url: originUrl },
+      { hostname, originUrl },
       {
         onSuccess: () => {
           toast.success(`Domain "${hostname}" created`);
@@ -69,9 +69,9 @@ export function CreateDomainDialog() {
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="origin_url">Origin URL</Label>
+              <Label htmlFor="origin-url">Origin URL</Label>
               <Input
-                id="origin_url"
+                id="origin-url"
                 placeholder="http://localhost:3001"
                 value={originUrl}
                 onChange={(e) => setOriginUrl(e.target.value)}

@@ -34,15 +34,15 @@ export function DomainsTable({ domains }: { domains: Domain[] }) {
           {domains.map((domain) => (
             <TableRow key={domain.id}>
               <TableCell className="font-medium">{domain.hostname}</TableCell>
-              <TableCell className="text-muted-foreground">{domain.origin_url}</TableCell>
+              <TableCell className="text-muted-foreground">{domain.originUrl}</TableCell>
               <TableCell>
                 <StatusBadge status={domain.status} />
               </TableCell>
-              <TableCell>{domain.metrics_port}</TableCell>
+              <TableCell>{domain.metricsPort}</TableCell>
               <TableCell>{domain.pid || "—"}</TableCell>
-              <TableCell>{domain.restart_count}</TableCell>
-              <TableCell className="max-w-48 truncate text-destructive" title={domain.last_error}>
-                {domain.last_error || "—"}
+              <TableCell>{domain.restartCount}</TableCell>
+              <TableCell className="max-w-48 truncate text-destructive" title={domain.lastError}>
+                {domain.lastError || "—"}
               </TableCell>
               <TableCell>
                 <Button variant="ghost" size="icon-sm" render={<Link href={`/domains/${domain.id}`} />}>

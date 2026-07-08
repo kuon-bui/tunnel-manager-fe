@@ -98,16 +98,16 @@ export function DomainDetail({ id }: { id: string }) {
       <Card>
         <CardHeader className="flex items-center justify-between">
           <CardTitle>Configuration</CardTitle>
-          <EditOriginDialog id={id} currentOriginUrl={domain.origin_url} />
+          <EditOriginDialog id={id} currentOriginUrl={domain.originUrl} />
         </CardHeader>
         <CardContent className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-4">
           <div>
             <p className="text-muted-foreground">Origin URL</p>
-            <p className="font-medium">{domain.origin_url}</p>
+            <p className="font-medium">{domain.originUrl}</p>
           </div>
           <div>
             <p className="text-muted-foreground">Metrics port</p>
-            <p className="font-medium">{domain.metrics_port}</p>
+            <p className="font-medium">{domain.metricsPort}</p>
           </div>
           <div>
             <p className="text-muted-foreground">PID</p>
@@ -115,12 +115,12 @@ export function DomainDetail({ id }: { id: string }) {
           </div>
           <div>
             <p className="text-muted-foreground">Restarts</p>
-            <p className="font-medium">{domain.restart_count}</p>
+            <p className="font-medium">{domain.restartCount}</p>
           </div>
-          {domain.last_error && (
+          {domain.lastError && (
             <div className="col-span-2 sm:col-span-4">
               <p className="text-muted-foreground">Last error</p>
-              <p className="font-medium text-destructive">{domain.last_error}</p>
+              <p className="font-medium text-destructive">{domain.lastError}</p>
             </div>
           )}
         </CardContent>
