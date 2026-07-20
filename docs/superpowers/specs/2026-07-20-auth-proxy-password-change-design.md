@@ -24,7 +24,7 @@ This design completes authentication across both applications. Browser communica
 - Let admin change password while preserving current browser session through newly issued JWT.
 - Revoke every previously issued JWT immediately after password change.
 - Preserve changed password across backend restarts.
-- Fix frontend update-origin request body to match backend `origin_url` contract.
+- Preserve frontend update-origin request body matching backend `originUrl` contract.
 
 ## Non-goals
 
@@ -270,7 +270,7 @@ Mutation handlers enforce same-origin requests by comparing `Origin` with reques
 Domain methods retain current shape except update origin sends backend-compatible payload:
 
 ```json
-{"origin_url":"..."}
+{"originUrl":"..."}
 ```
 
 Axios response interceptor handles `401` by navigating browser to `/login`. It does not inspect or manage JWT.
@@ -364,7 +364,7 @@ Use already-installed/native test capability where available. Do not add a test 
 - backend `401` deletes cookie
 - same-origin mutation enforcement
 - missing or malformed `API_BASE_URL`
-- update-origin request uses `origin_url`
+- update-origin request uses `originUrl`
 
 Also run frontend lint/build and backend full test/build suites.
 
@@ -403,7 +403,7 @@ Deploy backend and frontend together during maintenance window because protectin
 - Existing browser has no session cookie and is redirected to login.
 - Existing domain data remains unchanged.
 - CORS becomes unnecessary for browser domain calls because Next.js performs server-to-server requests, but backend CORS support remains unchanged for operational clients.
-- Frontend update-origin request changes from `originUrl` to `origin_url`, matching current backend request DTO.
+- Frontend update-origin request keeps `originUrl`, matching current backend request DTO.
 
 ## Success Criteria
 

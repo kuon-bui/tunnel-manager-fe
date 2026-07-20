@@ -1,5 +1,7 @@
 import axios from "axios";
 
+import { DOMAIN_API_BASE_URL, DOMAINS_PATH, updateOriginPayload } from "@/lib/api-config";
+
 export type DomainStatus = "pending" | "active" | "error" | "stopped";
 
 export interface Domain {
@@ -28,8 +30,15 @@ export class ApiError extends Error {
 }
 
 const client = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080",
+  baseURL: DOMAIN_API_BASE_URL,
   headers: { "Content-Type": "application/json" },
+});
+
+client.interceptors.response.use(undefined, (error) => {
+  if (typeof window !== "undefined" && axios.isAxiosError(error) && error.response?.status === 401) {
+    window.location.assign("/login");
+  }
+  return Promise.reject(error);
 });
 
 function extractErrorMessage(data: unknown, fallback: string): string {
@@ -65,38 +74,56 @@ async function unwrap<T>(promise: Promise<{ data: T }>): Promise<T> {
   }
 }
 
-export function listDomains(): Promise<Domain[]> {
-  return unwrap(client.get<Domain[]>("/api/domains"));
+interface ListDomainsResponse {
+  items: Domain[];
+  nextCursor: string;
+}
+
+export async function listDomains(): Promise<Domain[]> {
+  const res = await unwrap(client.get<ListDomainsResponse>(DOMAINS_PATH));
+  return res.items;
 }
 
 export function getDomain(id: string): Promise<Domain> {
-  return unwrap(client.get<Domain>(`/api/domains/${id}`));
+  return unwrap(client.get<Domain>(`${DOMAINS_PATH}/${id}`));
 }
 
 export function createDomain(input: { hostname: string; originUrl: string }): Promise<Domain> {
-  return unwrap(client.post<Domain>("/api/domains", input));
+  return unwrap(client.post<Domain>(DOMAINS_PATH, input));
 }
 
 export function updateOrigin(id: string, originUrl: string): Promise<Domain> {
-  return unwrap(client.put<Domain>(`/api/domains/${id}`, { originUrl }));
+  return unwrap(client.put<Domain>(`${DOMAINS_PATH}/${id}`, updateOriginPayload(originUrl)));
 }
 
 export function deleteDomain(id: string): Promise<void> {
-  return unwrap(client.delete<void>(`/api/domains/${id}`));
+  return unwrap(client.delete<void>(`${DOMAINS_PATH}/${id}`));
 }
 
 export function stopDomain(id: string): Promise<void> {
-  return unwrap(client.post<void>(`/api/domains/${id}/stop`));
+  return unwrap(client.post<void>(`${DOMAINS_PATH}/${id}/stop`));
 }
 
 export function restartDomain(id: string): Promise<void> {
-  return unwrap(client.post<void>(`/api/domains/${id}/restart`));
+  return unwrap(client.post<void>(`${DOMAINS_PATH}/${id}/restart`));
 }
 
 export function getLogs(id: string): Promise<string[]> {
-  return unwrap(client.get<string[]>(`/api/domains/${id}/logs`));
+  return unwrap(client.get<string[]>(`${DOMAINS_PATH}/${id}/logs`));
 }
 
 export function getMetrics(id: string): Promise<string> {
-  return unwrap(client.get<string>(`/api/domains/${id}/metrics`, { responseType: "text" }));
+  return unwrap(client.get<string>(`${DOMAINS_PATH}/${id}/metrics`, { responseType: "text" }));
+}
+
+export function login(input: { username: string; password: string }): Promise<void> {
+  return unwrap(axios.post<void>("/api/session/login", input));
+}
+
+export function logout(): Promise<void> {
+  return unwrap(axios.delete<void>("/api/session"));
+}
+
+export function changePassword(input: { currentPassword: string; newPassword: string }): Promise<void> {
+  return unwrap(axios.put<void>("/api/session/password", input));
 }

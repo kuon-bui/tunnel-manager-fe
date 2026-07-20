@@ -2,11 +2,18 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Network } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { LogOut, Network } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+
+import { ChangePasswordDialog } from "@/components/change-password-dialog";
+import { Button } from "@/components/ui/button";
+import { logout } from "@/lib/api";
 
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
@@ -20,6 +27,18 @@ const NAV_ITEMS = [{ title: "Domains", href: "/", icon: Network }];
 
 export function AppSidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+  const queryClient = useQueryClient();
+
+  async function handleLogout() {
+    try {
+      await logout();
+    } finally {
+      queryClient.clear();
+      router.replace("/login");
+      router.refresh();
+    }
+  }
 
   return (
     <Sidebar collapsible="icon">
@@ -57,6 +76,13 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+      <SidebarFooter>
+        <ChangePasswordDialog />
+        <Button variant="ghost" className="justify-start" onClick={handleLogout}>
+          <LogOut />
+          <span>Logout</span>
+        </Button>
+      </SidebarFooter>
     </Sidebar>
   );
 }

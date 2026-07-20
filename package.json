@@ -2,11 +2,13 @@
   "name": "tunnel-manager-fe",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "node --experimental-strip-types --test 'lib/**/*.test.ts'"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",

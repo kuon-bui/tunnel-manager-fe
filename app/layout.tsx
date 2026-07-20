@@ -2,9 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
-import { AppSidebar } from "@/components/app-sidebar";
 import { Providers } from "@/components/providers";
-import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { Toaster } from "@/components/ui/sonner";
 
 const inter = Inter({
@@ -31,15 +29,7 @@ export default function RootLayout({
     <html lang="en" className={`${inter.variable} ${geistMono.variable} h-full antialiased`}>
       <body className="min-h-full">
         <Providers>
-          <SidebarProvider>
-            <AppSidebar />
-            <SidebarInset>
-              <header className="flex h-12 shrink-0 items-center gap-2 border-b px-4">
-                <SidebarTrigger />
-              </header>
-              <div className="flex-1 p-6">{children}</div>
-            </SidebarInset>
-          </SidebarProvider>
+          {children}
           <Toaster />
         </Providers>
       </body>
