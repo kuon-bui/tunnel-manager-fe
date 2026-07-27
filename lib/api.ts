@@ -13,6 +13,9 @@ export interface Domain {
   id: string;
   hostname: string;
   originUrl: string;
+  path: string;
+  managed: boolean;
+  cloudflareStatus: string;
   status: DomainStatus;
   metricsPort: number;
   pid: number;

@@ -2,9 +2,11 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 
 import { StatusBadge } from "@/components/status-badge";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { Domain } from "@/lib/api";
+import { domainView } from "@/lib/domain-view";
 
 export function DomainsTable({ domains }: { domains: Domain[] }) {
   if (domains.length === 0) {
@@ -22,6 +24,8 @@ export function DomainsTable({ domains }: { domains: Domain[] }) {
           <TableRow>
             <TableHead>Hostname</TableHead>
             <TableHead>Origin</TableHead>
+            <TableHead>Path</TableHead>
+            <TableHead>Source</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Metrics port</TableHead>
             <TableHead>PID</TableHead>
@@ -31,26 +35,33 @@ export function DomainsTable({ domains }: { domains: Domain[] }) {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {domains.map((domain) => (
-            <TableRow key={domain.id}>
-              <TableCell className="font-medium">{domain.hostname}</TableCell>
-              <TableCell className="text-muted-foreground">{domain.originUrl}</TableCell>
-              <TableCell>
-                <StatusBadge status={domain.status} />
-              </TableCell>
-              <TableCell>{domain.metricsPort}</TableCell>
-              <TableCell>{domain.pid || "—"}</TableCell>
-              <TableCell>{domain.restartCount}</TableCell>
-              <TableCell className="max-w-48 truncate text-destructive" title={domain.lastError}>
-                {domain.lastError || "—"}
-              </TableCell>
-              <TableCell>
-                <Button variant="ghost" size="icon-sm" render={<Link href={`/domains/${domain.id}`} />}>
-                  <ArrowRight />
-                </Button>
-              </TableCell>
-            </TableRow>
-          ))}
+          {domains.map((domain) => {
+            const view = domainView(domain);
+            return (
+              <TableRow key={domain.id}>
+                <TableCell className="font-medium">{domain.hostname}</TableCell>
+                <TableCell className="text-muted-foreground">{domain.originUrl}</TableCell>
+                <TableCell className="text-muted-foreground">{view.path}</TableCell>
+                <TableCell>
+                  <Badge variant={domain.managed ? "secondary" : "outline"}>{view.source}</Badge>
+                </TableCell>
+                <TableCell>
+                  <StatusBadge status={domain.status} />
+                </TableCell>
+                <TableCell>{view.hasProcess ? domain.metricsPort : "—"}</TableCell>
+                <TableCell>{view.hasProcess && domain.pid ? domain.pid : "—"}</TableCell>
+                <TableCell>{view.hasProcess ? domain.restartCount : "—"}</TableCell>
+                <TableCell className="max-w-48 truncate text-destructive" title={domain.lastError}>
+                  {domain.lastError || "—"}
+                </TableCell>
+                <TableCell>
+                  <Button variant="ghost" size="icon-sm" render={<Link href={`/domains/${domain.id}`} />}>
+                    <ArrowRight />
+                  </Button>
+                </TableCell>
+              </TableRow>
+            );
+          })}
         </TableBody>
       </Table>
     </div>
