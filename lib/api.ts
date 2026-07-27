@@ -1,6 +1,11 @@
 import axios from "axios";
 
-import { DOMAIN_API_BASE_URL, DOMAINS_PATH, updateOriginPayload } from "@/lib/api-config";
+import {
+  DOMAIN_API_BASE_URL,
+  DOMAINS_PATH,
+  type CreateDomainInput,
+  updateOriginPayload,
+} from "@/lib/api-config";
 
 export type DomainStatus = "pending" | "active" | "error" | "stopped";
 
@@ -88,7 +93,7 @@ export function getDomain(id: string): Promise<Domain> {
   return unwrap(client.get<Domain>(`${DOMAINS_PATH}/${id}`));
 }
 
-export function createDomain(input: { hostname: string; originUrl: string }): Promise<Domain> {
+export function createDomain(input: CreateDomainInput): Promise<Domain> {
   return unwrap(client.post<Domain>(DOMAINS_PATH, input));
 }
 
