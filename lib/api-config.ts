@@ -4,15 +4,15 @@ export const DOMAINS_PATH = "/domains";
 export interface CreateDomainInput {
   hostname: string;
   originUrl: string;
-  path: string;
+  zoneId: string;
 }
 
 export function createDomainPayload(
   hostname: string,
   originUrl: string,
-  path: string,
+  zoneId: string,
 ): CreateDomainInput {
-  return { hostname, originUrl, path };
+  return { hostname, originUrl, zoneId };
 }
 
 export function updateOriginPayload(originUrl: string) {

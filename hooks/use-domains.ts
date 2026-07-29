@@ -7,6 +7,7 @@ import {
   getDomain,
   getLogs,
   getMetrics,
+  listCloudflareZones,
   listDomains,
   restartDomain,
   stopDomain,
@@ -20,6 +21,7 @@ export const domainKeys = {
   logs: (id: string) => ["domains", id, "logs"] as const,
   metrics: (id: string) => ["domains", id, "metrics"] as const,
   metricsError: (id: string) => ["domains", id, "metrics-error"] as const,
+  zones: ["cloudflare-zones"] as const,
 };
 
 export function useDomains() {
@@ -30,6 +32,14 @@ export function useDomains() {
   });
   useEffect(() => subscribeDomains(queryClient), [queryClient]);
   return query;
+}
+
+export function useCloudflareZones(enabled = true) {
+  return useQuery({
+    queryKey: domainKeys.zones,
+    queryFn: listCloudflareZones,
+    enabled,
+  });
 }
 
 export function useDomain(id: string) {

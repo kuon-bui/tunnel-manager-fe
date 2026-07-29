@@ -28,6 +28,12 @@ export interface Domain {
   dnsRecordId?: string;
 }
 
+export interface CloudflareZone {
+  id: string;
+  name: string;
+  status: string;
+}
+
 export class ApiError extends Error {
   status: number;
 
@@ -88,8 +94,17 @@ interface ListDomainsResponse {
   nextCursor: string;
 }
 
+interface ListCloudflareZonesResponse {
+  items: CloudflareZone[];
+}
+
 export async function listDomains(): Promise<Domain[]> {
   const res = await unwrap(client.get<ListDomainsResponse>(DOMAINS_PATH));
+  return res.items;
+}
+
+export async function listCloudflareZones(): Promise<CloudflareZone[]> {
+  const res = await unwrap(client.get<ListCloudflareZonesResponse>("/cloudflare/zones"));
   return res.items;
 }
 

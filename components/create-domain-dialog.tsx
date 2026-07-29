@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useCreateDomain } from "@/hooks/use-domains";
+import { useCloudflareZones, useCreateDomain } from "@/hooks/use-domains";
 import { ApiError } from "@/lib/api";
 import { createDomainPayload } from "@/lib/api-config";
 
@@ -24,20 +24,21 @@ export function CreateDomainDialog() {
   const [open, setOpen] = useState(false);
   const [hostname, setHostname] = useState("");
   const [originUrl, setOriginUrl] = useState("");
-  const [path, setPath] = useState("");
+  const [zoneId, setZoneId] = useState("");
   const createDomain = useCreateDomain();
+  const zones = useCloudflareZones(open);
 
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     createDomain.mutate(
-      createDomainPayload(hostname, originUrl, path),
+      createDomainPayload(hostname, originUrl, zoneId),
       {
         onSuccess: () => {
           toast.success(`Domain "${hostname}" created`);
           setOpen(false);
           setHostname("");
           setOriginUrl("");
-          setPath("");
+          setZoneId("");
         },
         onError: (err) => {
           toast.error(err instanceof ApiError ? err.message : "Failed to create domain");
@@ -82,21 +83,26 @@ export function CreateDomainDialog() {
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="path">Path (optional)</Label>
-              <Input
-                id="path"
-                aria-describedby="path-description"
-                placeholder="/api/.*"
-                value={path}
-                onChange={(e) => setPath(e.target.value)}
-              />
-              <p id="path-description" className="text-xs text-muted-foreground">
-                Leave empty to route every path for this hostname.
-              </p>
+              <Label htmlFor="zone">Cloudflare zone</Label>
+              <select
+                id="zone"
+                className="h-9 w-full rounded-md border bg-transparent px-3 text-sm"
+                value={zoneId}
+                onChange={(event) => setZoneId(event.target.value)}
+                required
+              >
+                <option value="" disabled>
+                  {zones.isPending ? "Loading zones…" : "Select a zone"}
+                </option>
+                {zones.data?.map((zone) => (
+                  <option key={zone.id} value={zone.id}>{zone.name}</option>
+                ))}
+              </select>
+              {zones.isError && <p className="text-xs text-destructive">Failed to load Cloudflare zones.</p>}
             </div>
           </div>
           <DialogFooter>
-            <Button type="submit" disabled={createDomain.isPending}>
+            <Button type="submit" disabled={createDomain.isPending || !zoneId || zones.isError}>
               {createDomain.isPending ? "Creating…" : "Create"}
             </Button>
           </DialogFooter>

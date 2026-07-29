@@ -13,13 +13,13 @@ test("domain API uses same-origin backend proxy", () => {
   assert.equal(DOMAINS_PATH, "/domains");
 });
 
-test("create domain uses backend path contract", () => {
+test("create domain uses backend zone contract", () => {
   assert.deepEqual(
-    createDomainPayload("app.example.com", "http://localhost:3001", "/api/.*"),
+    createDomainPayload("app.example.com", "http://localhost:3001", "zone-1"),
     {
       hostname: "app.example.com",
       originUrl: "http://localhost:3001",
-      path: "/api/.*",
+      zoneId: "zone-1",
     },
   );
 });
