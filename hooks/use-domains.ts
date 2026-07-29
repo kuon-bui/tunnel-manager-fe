@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import {
@@ -11,40 +12,41 @@ import {
   stopDomain,
   updateOrigin,
 } from "@/lib/api";
+import { subscribeDomainDetail, subscribeDomains } from "@/lib/domain-stream";
 
 export const domainKeys = {
   all: ["domains"] as const,
   detail: (id: string) => ["domains", id] as const,
   logs: (id: string) => ["domains", id, "logs"] as const,
   metrics: (id: string) => ["domains", id, "metrics"] as const,
+  metricsError: (id: string) => ["domains", id, "metrics-error"] as const,
 };
 
-const LIST_POLL_INTERVAL_MS = 5000;
-const LOGS_POLL_INTERVAL_MS = 4000;
-const METRICS_POLL_INTERVAL_MS = 4000;
-
 export function useDomains() {
-  return useQuery({
+  const queryClient = useQueryClient();
+  const query = useQuery({
     queryKey: domainKeys.all,
     queryFn: listDomains,
-    refetchInterval: LIST_POLL_INTERVAL_MS,
   });
+  useEffect(() => subscribeDomains(queryClient), [queryClient]);
+  return query;
 }
 
 export function useDomain(id: string) {
-  return useQuery({
+  const queryClient = useQueryClient();
+  const query = useQuery({
     queryKey: domainKeys.detail(id),
     queryFn: () => getDomain(id),
-    refetchInterval: LIST_POLL_INTERVAL_MS,
     enabled: Boolean(id),
   });
+  useEffect(() => id ? subscribeDomainDetail(queryClient, id) : undefined, [id, queryClient]);
+  return query;
 }
 
 export function useLogs(id: string) {
   return useQuery({
     queryKey: domainKeys.logs(id),
     queryFn: () => getLogs(id),
-    refetchInterval: LOGS_POLL_INTERVAL_MS,
     enabled: Boolean(id),
   });
 }
@@ -53,8 +55,15 @@ export function useMetrics(id: string) {
   return useQuery({
     queryKey: domainKeys.metrics(id),
     queryFn: () => getMetrics(id),
-    refetchInterval: METRICS_POLL_INTERVAL_MS,
     enabled: Boolean(id),
+  });
+}
+
+export function useMetricsError(id: string) {
+  return useQuery<string>({
+    queryKey: domainKeys.metricsError(id),
+    queryFn: async () => "",
+    enabled: false,
   });
 }
 
