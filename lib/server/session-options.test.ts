@@ -4,7 +4,7 @@ import test from "node:test";
 import { sessionCookieOptions } from "./session-options.ts";
 
 test("session cookie stays HttpOnly and expires with backend token", () => {
-  const expiresAt = "2026-07-27T12:00:00Z";
+  const expiresAt = "2100-07-27T12:00:00Z";
   assert.deepEqual(sessionCookieOptions(expiresAt, false), {
     httpOnly: true,
     secure: false,
