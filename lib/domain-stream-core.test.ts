@@ -28,9 +28,23 @@ test("domain stream accepts full snapshots and preserves frontend fields", () =>
   assert.deepEqual(parseDomainListEvent(JSON.stringify({ items: [domain], nextCursor: "" })), [domain]);
 });
 
+test("domain stream normalizes fields absent from managed backend snapshots", () => {
+  const managedDomain = { ...domain } as Partial<typeof domain>;
+  delete managedDomain.path;
+  delete managedDomain.managed;
+  delete managedDomain.cloudflareStatus;
+  assert.deepEqual(parseDomainListEvent(JSON.stringify({ items: [managedDomain], nextCursor: "" })), [
+    { ...managedDomain, path: "", managed: true, cloudflareStatus: "" },
+  ]);
+});
+
 test("domain stream rejects malformed snapshots", () => {
   assert.equal(parseDomainListEvent('{"items":[{"id":1}]}'), undefined);
   assert.equal(parseDomainListEvent("not json"), undefined);
+});
+
+test("domain stream treats a nil backend snapshot as empty", () => {
+  assert.deepEqual(parseDomainListEvent('{"items":null,"nextCursor":""}'), []);
 });
 
 test("detail stream validates logs, metrics, and metric errors", () => {

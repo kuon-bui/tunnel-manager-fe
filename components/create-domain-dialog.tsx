@@ -18,26 +18,29 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useCloudflareZones, useCreateDomain } from "@/hooks/use-domains";
 import { ApiError } from "@/lib/api";
-import { createDomainPayload } from "@/lib/api-config";
+import { createDomainPayload, selectedZoneID } from "@/lib/api-config";
 
 export function CreateDomainDialog() {
   const [open, setOpen] = useState(false);
   const [hostname, setHostname] = useState("");
   const [originUrl, setOriginUrl] = useState("");
+  const [path, setPath] = useState("");
   const [zoneId, setZoneId] = useState("");
   const createDomain = useCreateDomain();
   const zones = useCloudflareZones(open);
+  const effectiveZoneId = selectedZoneID(zoneId, zones.data ?? []);
 
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     createDomain.mutate(
-      createDomainPayload(hostname, originUrl, zoneId),
+      createDomainPayload(hostname, originUrl, path, effectiveZoneId),
       {
         onSuccess: () => {
           toast.success(`Domain "${hostname}" created`);
           setOpen(false);
           setHostname("");
           setOriginUrl("");
+          setPath("");
           setZoneId("");
         },
         onError: (err) => {
@@ -83,16 +86,30 @@ export function CreateDomainDialog() {
               />
             </div>
             <div className="grid gap-2">
+              <Label htmlFor="path">Path (optional)</Label>
+              <Input
+                id="path"
+                aria-describedby="path-description"
+                placeholder="/api/.*"
+                value={path}
+                onChange={(event) => setPath(event.target.value)}
+              />
+              <p id="path-description" className="text-xs text-muted-foreground">
+                Leave empty to route every path for this hostname.
+              </p>
+            </div>
+            <div className="grid gap-2">
               <Label htmlFor="zone">Cloudflare zone</Label>
               <select
                 id="zone"
                 className="h-9 w-full rounded-md border bg-transparent px-3 text-sm"
-                value={zoneId}
+                value={effectiveZoneId}
                 onChange={(event) => setZoneId(event.target.value)}
+                disabled={zones.isPending || zones.isError || !zones.data?.length}
                 required
               >
                 <option value="" disabled>
-                  {zones.isPending ? "Loading zones…" : "Select a zone"}
+                  {zones.isPending ? "Loading zones…" : zones.data?.length ? "Select a zone" : "No zones available"}
                 </option>
                 {zones.data?.map((zone) => (
                   <option key={zone.id} value={zone.id}>{zone.name}</option>
@@ -102,7 +119,7 @@ export function CreateDomainDialog() {
             </div>
           </div>
           <DialogFooter>
-            <Button type="submit" disabled={createDomain.isPending || !zoneId || zones.isError}>
+            <Button type="submit" disabled={createDomain.isPending || !effectiveZoneId || zones.isPending || zones.isError}>
               {createDomain.isPending ? "Creating…" : "Create"}
             </Button>
           </DialogFooter>

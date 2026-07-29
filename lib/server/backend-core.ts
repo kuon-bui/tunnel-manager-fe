@@ -19,6 +19,11 @@ export function isSameOrigin(origin: string | null, requestURL: string): boolean
   return origin !== null && origin === new URL(requestURL).origin;
 }
 
+export function authenticatedFromBackendStatus(status: number): boolean | undefined {
+  if (status === 401) return false;
+  return status >= 200 && status < 300 ? true : undefined;
+}
+
 export async function proxyRequestInit(request: Request, token?: string): Promise<RequestInit> {
   const headers = new Headers();
   const contentType = request.headers.get("content-type");

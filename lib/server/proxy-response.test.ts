@@ -3,7 +3,7 @@ import test from "node:test";
 
 import { proxyResponseHeaders } from "./proxy-response.ts";
 
-test("proxy response preserves SSE streaming headers", () => {
+test("proxy response preserves end-to-end SSE headers only", () => {
   const headers = proxyResponseHeaders(new Headers({
     "cache-control": "no-cache",
     connection: "keep-alive",
@@ -12,7 +12,7 @@ test("proxy response preserves SSE streaming headers", () => {
   }));
   assert.equal(headers.get("content-type"), "text/event-stream");
   assert.equal(headers.get("cache-control"), "no-cache");
-  assert.equal(headers.get("connection"), "keep-alive");
+  assert.equal(headers.get("connection"), null);
   assert.equal(headers.get("x-accel-buffering"), "no");
 });
 

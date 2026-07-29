@@ -6,6 +6,8 @@ import {
   type CreateDomainInput,
   updateOriginPayload,
 } from "@/lib/api-config";
+import { normalizeDomain } from "@/lib/domain-stream-core";
+import { notifySessionTokenChanged } from "@/lib/session-events";
 
 export type DomainStatus = "pending" | "active" | "error" | "stopped";
 
@@ -90,7 +92,7 @@ async function unwrap<T>(promise: Promise<{ data: T }>): Promise<T> {
 }
 
 interface ListDomainsResponse {
-  items: Domain[];
+  items: Domain[] | null;
   nextCursor: string;
 }
 
@@ -100,7 +102,7 @@ interface ListCloudflareZonesResponse {
 
 export async function listDomains(): Promise<Domain[]> {
   const res = await unwrap(client.get<ListDomainsResponse>(DOMAINS_PATH));
-  return res.items;
+  return (res.items ?? []).map(normalizeDomain);
 }
 
 export async function listCloudflareZones(): Promise<CloudflareZone[]> {
@@ -108,16 +110,16 @@ export async function listCloudflareZones(): Promise<CloudflareZone[]> {
   return res.items;
 }
 
-export function getDomain(id: string): Promise<Domain> {
-  return unwrap(client.get<Domain>(`${DOMAINS_PATH}/${id}`));
+export async function getDomain(id: string): Promise<Domain> {
+  return normalizeDomain(await unwrap(client.get<Domain>(`${DOMAINS_PATH}/${id}`)));
 }
 
-export function createDomain(input: CreateDomainInput): Promise<Domain> {
-  return unwrap(client.post<Domain>(DOMAINS_PATH, input));
+export async function createDomain(input: CreateDomainInput): Promise<Domain> {
+  return normalizeDomain(await unwrap(client.post<Domain>(DOMAINS_PATH, input)));
 }
 
-export function updateOrigin(id: string, originUrl: string): Promise<Domain> {
-  return unwrap(client.put<Domain>(`${DOMAINS_PATH}/${id}`, updateOriginPayload(originUrl)));
+export async function updateOrigin(id: string, originUrl: string): Promise<Domain> {
+  return normalizeDomain(await unwrap(client.put<Domain>(`${DOMAINS_PATH}/${id}`, updateOriginPayload(originUrl))));
 }
 
 export function deleteDomain(id: string): Promise<void> {
@@ -148,6 +150,7 @@ export function logout(): Promise<void> {
   return unwrap(axios.delete<void>("/api/session"));
 }
 
-export function changePassword(input: { currentPassword: string; newPassword: string }): Promise<void> {
-  return unwrap(axios.put<void>("/api/session/password", input));
+export async function changePassword(input: { currentPassword: string; newPassword: string }): Promise<void> {
+  await unwrap(axios.put<void>("/api/session/password", input));
+  notifySessionTokenChanged();
 }

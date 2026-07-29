@@ -1,4 +1,4 @@
-const RESPONSE_HEADERS = ["content-type", "cache-control", "connection", "x-accel-buffering"];
+const RESPONSE_HEADERS = ["content-type", "cache-control", "x-accel-buffering"];
 
 export function proxyResponseHeaders(source: Headers): Headers {
   const headers = new Headers();

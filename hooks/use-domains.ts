@@ -13,7 +13,7 @@ import {
   stopDomain,
   updateOrigin,
 } from "@/lib/api";
-import { subscribeDomainDetail, subscribeDomains } from "@/lib/domain-stream";
+import { subscribeDomainDetail } from "@/lib/domain-stream";
 
 export const domainKeys = {
   all: ["domains"] as const,
@@ -25,13 +25,10 @@ export const domainKeys = {
 };
 
 export function useDomains() {
-  const queryClient = useQueryClient();
-  const query = useQuery({
+  return useQuery({
     queryKey: domainKeys.all,
     queryFn: listDomains,
   });
-  useEffect(() => subscribeDomains(queryClient), [queryClient]);
-  return query;
 }
 
 export function useCloudflareZones(enabled = true) {
