@@ -1,7 +1,11 @@
 import { NextRequest } from "next/server";
 
 import { requireSameOrigin } from "@/lib/server/backend";
-import { deleteSessionToken } from "@/lib/server/session";
+import { deleteSessionToken, getSessionToken } from "@/lib/server/session";
+
+export async function GET() {
+  return Response.json({ authenticated: Boolean(await getSessionToken()) });
+}
 
 export async function DELETE(request: NextRequest) {
   const forbidden = requireSameOrigin(request);

@@ -39,3 +39,10 @@ test("proxy request ignores browser secrets and adds server bearer", async () =>
   assert.equal(init.method, "PUT");
   assert.equal(init.body, JSON.stringify({ originUrl: "http://localhost:4000" }));
 });
+
+test("proxy request forwards browser disconnect to backend fetch", async () => {
+  const controller = new AbortController();
+  const request = new Request("http://localhost:3000/api/domains/stream", { signal: controller.signal });
+  const init = await proxyRequestInit(request, "trusted");
+  assert.equal(init.signal, request.signal);
+});

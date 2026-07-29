@@ -1,6 +1,7 @@
 import "server-only";
 
 import { backendURL, isSameOrigin, proxyRequestInit } from "./backend-core";
+import { proxyResponseHeaders } from "./proxy-response";
 import { deleteSessionToken, getSessionToken } from "./session";
 
 export function requireSameOrigin(request: Request): Response | undefined {
@@ -17,10 +18,7 @@ export async function proxyBackend(request: Request, path: string[], authenticat
     const response = await fetch(url, await proxyRequestInit(request, token));
     if (response.status === 401 && authenticated) await deleteSessionToken();
 
-    const headers = new Headers();
-    const contentType = response.headers.get("content-type");
-    if (contentType) headers.set("content-type", contentType);
-    return new Response(response.body, { status: response.status, headers });
+    return new Response(response.body, { status: response.status, headers: proxyResponseHeaders(response.headers) });
   } catch (error) {
     if (error instanceof TypeError && error.message.includes("API_BASE_URL")) {
       return Response.json({ error: "server configuration error" }, { status: 500 });
