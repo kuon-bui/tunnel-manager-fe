@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { backendURL, isSameOrigin, proxyRequestInit } from "./backend-core.ts";
+import { authenticatedFromBackendStatus, backendURL, isSameOrigin, proxyRequestInit } from "./backend-core.ts";
 
 test("backend URL is server configured and preserves path and query", () => {
   assert.equal(
@@ -38,4 +38,17 @@ test("proxy request ignores browser secrets and adds server bearer", async () =>
   assert.equal(headers.get("content-type"), "application/json");
   assert.equal(init.method, "PUT");
   assert.equal(init.body, JSON.stringify({ originUrl: "http://localhost:4000" }));
+});
+
+test("proxy request forwards browser disconnect to backend fetch", async () => {
+  const controller = new AbortController();
+  const request = new Request("http://localhost:3000/api/domains/stream", { signal: controller.signal });
+  const init = await proxyRequestInit(request, "trusted");
+  assert.equal(init.signal, request.signal);
+});
+
+test("session status logs out only after backend unauthorized response", () => {
+  assert.equal(authenticatedFromBackendStatus(200), true);
+  assert.equal(authenticatedFromBackendStatus(401), false);
+  assert.equal(authenticatedFromBackendStatus(502), undefined);
 });
