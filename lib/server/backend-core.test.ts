@@ -1,7 +1,13 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { authenticatedFromBackendStatus, backendURL, isSameOrigin, proxyRequestInit } from "./backend-core";
+import {
+  authenticatedFromBackendStatus,
+  backendURL,
+  cloudflareAccessCredentials,
+  isSameOrigin,
+  proxyRequestInit,
+} from "./backend-core.ts";
 
 test("backend URL is server configured and preserves path and query", () => {
   assert.equal(
@@ -42,20 +48,37 @@ test("same-origin check honors reverse-proxy host and protocol", () => {
   assert.equal(isSameOrigin("not a URL", "localhost:3000", null, null, internalURL), false);
 });
 
-test("proxy request ignores browser secrets and adds server bearer", async () => {
+test("Cloudflare Access credentials must be configured as a complete pair", () => {
+  assert.equal(cloudflareAccessCredentials(undefined, undefined), undefined);
+  assert.throws(() => cloudflareAccessCredentials("client-id", undefined), /Cloudflare Access/);
+  assert.throws(() => cloudflareAccessCredentials(undefined, "client-secret"), /Cloudflare Access/);
+  assert.deepEqual(cloudflareAccessCredentials(" client-id ", " client-secret "), {
+    clientId: "client-id",
+    clientSecret: "client-secret",
+  });
+});
+
+test("proxy request ignores browser secrets and adds server credentials", async () => {
   const request = new Request("http://localhost:3000/api/backend/domains/1", {
     method: "PUT",
     headers: {
       authorization: "Bearer attacker",
+      "cf-access-client-id": "attacker-id",
+      "cf-access-client-secret": "attacker-secret",
       cookie: "stolen=true",
       origin: "http://localhost:3000",
       "content-type": "application/json",
     },
     body: JSON.stringify({ originUrl: "http://localhost:4000" }),
   });
-  const init = await proxyRequestInit(request, "trusted");
+  const init = await proxyRequestInit(request, "trusted", {
+    clientId: "trusted-id",
+    clientSecret: "trusted-secret",
+  });
   const headers = new Headers(init.headers);
   assert.equal(headers.get("authorization"), "Bearer trusted");
+  assert.equal(headers.get("cf-access-client-id"), "trusted-id");
+  assert.equal(headers.get("cf-access-client-secret"), "trusted-secret");
   assert.equal(headers.get("cookie"), null);
   assert.equal(headers.get("origin"), null);
   assert.equal(headers.get("content-type"), "application/json");

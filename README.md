@@ -14,6 +14,18 @@ Do not prefix this variable with `NEXT_PUBLIC_`. Browser calls same-origin
 Next.js route handlers under `/api`; Next.js proxies requests to backend and
 keeps backend JWT in an `HttpOnly`, `SameSite=Lax` cookie.
 
+When the production backend hostname is protected by a Cloudflare Access
+Service Auth policy, also configure these server-only variables in Vercel:
+
+```env
+CF_ACCESS_CLIENT_ID=<service-token-client-id>
+CF_ACCESS_CLIENT_SECRET=<service-token-client-secret>
+```
+
+Both variables must be configured together. The route handlers ignore any
+Cloudflare Access headers supplied by the browser and attach only these trusted
+server-side credentials to backend requests.
+
 ## Development
 
 ```bash

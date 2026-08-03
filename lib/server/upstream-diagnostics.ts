@@ -9,6 +9,8 @@ export function upstreamRequestMetadata(url: URL, init: RequestInit) {
     method: init.method ?? "GET",
     contentType: headers.get("content-type"),
     forwardedOrigin: headers.get("origin"),
+    cloudflareAccessConfigured:
+      headers.has("cf-access-client-id") && headers.has("cf-access-client-secret"),
     bodyPresent: init.body != null,
   };
 }

@@ -53,11 +53,35 @@ export function authenticatedFromBackendStatus(status: number): boolean | undefi
   return status >= 200 && status < 300 ? true : undefined;
 }
 
-export async function proxyRequestInit(request: Request, token?: string): Promise<RequestInit> {
+export interface CloudflareAccessCredentials {
+  clientId: string;
+  clientSecret: string;
+}
+
+export function cloudflareAccessCredentials(
+  clientId: string | undefined,
+  clientSecret: string | undefined,
+): CloudflareAccessCredentials | undefined {
+  const normalizedClientId = clientId?.trim();
+  const normalizedClientSecret = clientSecret?.trim();
+  if (!normalizedClientId && !normalizedClientSecret) return undefined;
+  if (!normalizedClientId || !normalizedClientSecret) throw new Error("invalid Cloudflare Access configuration");
+  return { clientId: normalizedClientId, clientSecret: normalizedClientSecret };
+}
+
+export async function proxyRequestInit(
+  request: Request,
+  token?: string,
+  access?: CloudflareAccessCredentials,
+): Promise<RequestInit> {
   const headers = new Headers();
   const contentType = request.headers.get("content-type");
   if (contentType) headers.set("content-type", contentType);
   if (token) headers.set("authorization", `Bearer ${token}`);
+  if (access) {
+    headers.set("cf-access-client-id", access.clientId);
+    headers.set("cf-access-client-secret", access.clientSecret);
+  }
 
   const body = request.method === "GET" || request.method === "HEAD" ? undefined : await request.text();
   return { method: request.method, headers, body: body || undefined, redirect: "manual", signal: request.signal };
