@@ -4,6 +4,7 @@ import { backendURL, isSameOrigin, proxyRequestInit } from "./backend-core";
 import { rejectedOriginMetadata } from "./origin-diagnostics";
 import { proxyResponseHeaders } from "./proxy-response";
 import { deleteSessionToken, getSessionToken } from "./session";
+import { upstreamErrorMetadata, upstreamRequestMetadata } from "./upstream-diagnostics";
 
 export function requireSameOrigin(request: Request): Response | undefined {
     if (
@@ -28,7 +29,14 @@ export async function proxyBackend(request: Request, path: string[], authenticat
     if (authenticated && !token) return Response.json({ error: "unauthorized" }, { status: 401 });
 
     const url = backendURL(process.env.API_BASE_URL, path, new URL(request.url).search);
-    const response = await fetch(url, await proxyRequestInit(request, token));
+    const init = await proxyRequestInit(request, token);
+    const isLogin = !authenticated && path.length === 2 && path[0] === "auth" && path[1] === "login";
+    if (isLogin) console.info("backend login request started", upstreamRequestMetadata(url, init));
+
+    const response = await fetch(url, init);
+    if (isLogin && response.status === 403) {
+      console.warn("backend login upstream rejected request", await upstreamErrorMetadata(url, response));
+    }
     if (response.status === 401 && authenticated) await deleteSessionToken();
 
     return new Response(response.body, { status: response.status, headers: proxyResponseHeaders(response.headers) });
