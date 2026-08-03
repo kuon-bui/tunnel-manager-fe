@@ -18,7 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useCloudflareZones, useCreateDomain } from "@/hooks/use-domains";
 import { ApiError } from "@/lib/api";
-import { createDomainPayload, selectedZoneID } from "@/lib/api-config";
+import { createDomainPayload, hostnameForZone, selectedZoneID } from "@/lib/api-config";
 
 export function CreateDomainDialog() {
   const [open, setOpen] = useState(false);
@@ -29,14 +29,18 @@ export function CreateDomainDialog() {
   const createDomain = useCreateDomain();
   const zones = useCloudflareZones(open);
   const effectiveZoneId = selectedZoneID(zoneId, zones.data ?? []);
+  const selectedZone = zones.data?.find((zone) => zone.id === effectiveZoneId);
+  const fullHostname = hostnameForZone(hostname, selectedZone?.name ?? "");
+  const hostnameOutsideZone = Boolean(hostname.trim() && selectedZone && !fullHostname);
 
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
+    if (!fullHostname) return;
     createDomain.mutate(
-      createDomainPayload(hostname, originUrl, path, effectiveZoneId),
+      createDomainPayload(fullHostname, originUrl, path, effectiveZoneId),
       {
         onSuccess: () => {
-          toast.success(`Domain "${hostname}" created`);
+          toast.success(`Domain "${fullHostname}" created`);
           setOpen(false);
           setHostname("");
           setOriginUrl("");
@@ -69,11 +73,22 @@ export function CreateDomainDialog() {
               <Label htmlFor="hostname">Hostname</Label>
               <Input
                 id="hostname"
-                placeholder="app.example.com"
+                aria-describedby="hostname-description"
+                placeholder="api-tunnel"
                 value={hostname}
                 onChange={(e) => setHostname(e.target.value)}
                 required
               />
+              <p
+                id="hostname-description"
+                className={hostnameOutsideZone ? "text-xs text-destructive" : "text-xs text-muted-foreground"}
+              >
+                {hostnameOutsideZone
+                  ? `Hostname must be a name or belong to ${selectedZone?.name}.`
+                  : fullHostname
+                    ? `Full hostname: ${fullHostname}`
+                    : "Enter a name; the selected zone will be added automatically."}
+              </p>
             </div>
             <div className="grid gap-2">
               <Label htmlFor="origin-url">Origin URL</Label>
@@ -119,7 +134,10 @@ export function CreateDomainDialog() {
             </div>
           </div>
           <DialogFooter>
-            <Button type="submit" disabled={createDomain.isPending || !effectiveZoneId || zones.isPending || zones.isError}>
+            <Button
+              type="submit"
+              disabled={createDomain.isPending || !fullHostname || zones.isPending || zones.isError}
+            >
               {createDomain.isPending ? "Creating…" : "Create"}
             </Button>
           </DialogFooter>

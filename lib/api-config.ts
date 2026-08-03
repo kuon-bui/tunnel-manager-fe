@@ -24,3 +24,18 @@ export function selectedZoneID(current: string, zones: { id: string }[]): string
 export function updateOriginPayload(originUrl: string) {
   return { originUrl };
 }
+
+export function hostnameForZone(hostname: string, zoneName: string): string | undefined {
+  const normalizedHostname = normalizeDNSName(hostname);
+  const normalizedZone = normalizeDNSName(zoneName);
+  if (!normalizedHostname || !normalizedZone) return undefined;
+  if (!normalizedHostname.includes(".")) return `${normalizedHostname}.${normalizedZone}`;
+  if (normalizedHostname === normalizedZone || normalizedHostname.endsWith(`.${normalizedZone}`)) {
+    return normalizedHostname;
+  }
+  return undefined;
+}
+
+function normalizeDNSName(value: string): string {
+  return value.trim().toLowerCase().replace(/\.$/, "");
+}

@@ -5,9 +5,10 @@ import {
   DOMAIN_API_BASE_URL,
   DOMAINS_PATH,
   createDomainPayload,
+  hostnameForZone,
   selectedZoneID,
   updateOriginPayload,
-} from "./api-config.ts";
+} from "./api-config";
 
 test("domain API uses same-origin backend proxy", () => {
   assert.equal(DOMAIN_API_BASE_URL, "/api");
@@ -37,4 +38,20 @@ test("zone selection defaults to first available zone", () => {
   assert.equal(selectedZoneID("zone-2", zones), "zone-2");
   assert.equal(selectedZoneID("missing", zones), "zone-1");
   assert.equal(selectedZoneID("", []), "");
+});
+
+test("short hostname expands into the selected zone", () => {
+  assert.equal(hostnameForZone("api-tunnel", "example.com"), "api-tunnel.example.com");
+  assert.equal(hostnameForZone(" API-TUNNEL ", " Example.COM. "), "api-tunnel.example.com");
+});
+
+test("hostname already inside the selected zone remains fully qualified", () => {
+  assert.equal(hostnameForZone("api.example.com", "example.com"), "api.example.com");
+  assert.equal(hostnameForZone("example.com", "example.com"), "example.com");
+});
+
+test("hostname outside the selected zone is rejected", () => {
+  assert.equal(hostnameForZone("api.other.test", "example.com"), undefined);
+  assert.equal(hostnameForZone("api-tunnel", ""), undefined);
+  assert.equal(hostnameForZone("", "example.com"), undefined);
 });

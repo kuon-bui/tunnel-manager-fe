@@ -15,8 +15,37 @@ export function backendURL(baseURL: string | undefined, path: string[], search: 
   return url;
 }
 
-export function isSameOrigin(origin: string | null, requestURL: string): boolean {
-  return origin !== null && origin === new URL(requestURL).origin;
+export function isSameOrigin(
+  origin: string | null,
+  host: string | null,
+  forwardedHost: string | null,
+  forwardedProto: string | null,
+  requestURL: string,
+): boolean {
+  if (!origin) return false;
+
+  const effectiveHost = firstForwardedValue(forwardedHost) ?? host?.trim();
+  if (!effectiveHost) return false;
+
+  let parsedOrigin: URL;
+  let requestProtocol: string;
+  try {
+    parsedOrigin = new URL(origin);
+    requestProtocol = new URL(requestURL).protocol;
+  } catch {
+    return false;
+  }
+
+  const forwardedProtocol = firstForwardedValue(forwardedProto);
+  const effectiveProtocol = forwardedProtocol ? `${forwardedProtocol.replace(/:$/, "")}:` : requestProtocol;
+  if (effectiveProtocol !== "http:" && effectiveProtocol !== "https:") return false;
+
+  return parsedOrigin.protocol === effectiveProtocol && parsedOrigin.host.toLowerCase() === effectiveHost.toLowerCase();
+}
+
+function firstForwardedValue(value: string | null): string | undefined {
+  const first = value?.split(",", 1)[0]?.trim();
+  return first || undefined;
 }
 
 export function authenticatedFromBackendStatus(status: number): boolean | undefined {

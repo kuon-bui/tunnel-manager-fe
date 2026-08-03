@@ -5,8 +5,17 @@ import { proxyResponseHeaders } from "./proxy-response";
 import { deleteSessionToken, getSessionToken } from "./session";
 
 export function requireSameOrigin(request: Request): Response | undefined {
-  if (isSameOrigin(request.headers.get("origin"), request.url)) return undefined;
-  return Response.json({ error: "forbidden" }, { status: 403 });
+    if (
+    isSameOrigin(
+      request.headers.get("origin"),
+      request.headers.get("host"),
+      request.headers.get("x-forwarded-host"),
+      request.headers.get("x-forwarded-proto"),
+      request.url,
+    )
+  ) {
+    return undefined;
+  }return Response.json({ error: "forbidden" }, { status: 403 });
 }
 
 export async function proxyBackend(request: Request, path: string[], authenticated = true): Promise<Response> {

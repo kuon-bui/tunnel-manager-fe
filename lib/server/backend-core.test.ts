@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { authenticatedFromBackendStatus, backendURL, isSameOrigin, proxyRequestInit } from "./backend-core.ts";
+import { authenticatedFromBackendStatus, backendURL, isSameOrigin, proxyRequestInit } from "./backend-core";
 
 test("backend URL is server configured and preserves path and query", () => {
   assert.equal(
@@ -13,10 +13,33 @@ test("backend URL is server configured and preserves path and query", () => {
   assert.throws(() => backendURL("http://localhost:8180", ["..", "auth"], ""));
 });
 
-test("same-origin check requires exact browser origin", () => {
-  assert.equal(isSameOrigin("http://localhost:3000", "http://localhost:3000/api/session"), true);
-  assert.equal(isSameOrigin("http://evil.test", "http://localhost:3000/api/session"), false);
-  assert.equal(isSameOrigin(null, "http://localhost:3000/api/session"), false);
+test("same-origin check uses the external request host instead of the container bind address", () => {
+  const internalURL = "http://0.0.0.0:3000/api/session";
+
+  assert.equal(isSameOrigin("http://localhost:3000", "localhost:3000", null, null, internalURL), true);
+  assert.equal(isSameOrigin("http://10.10.1.10:3000", "10.10.1.10:3000", null, null, internalURL), true);
+  assert.equal(isSameOrigin("http://evil.test", "localhost:3000", null, null, internalURL), false);
+  assert.equal(isSameOrigin(null, "localhost:3000", null, null, internalURL), false);
+});
+
+test("same-origin check honors reverse-proxy host and protocol", () => {
+  const internalURL = "http://0.0.0.0:3000/api/session";
+
+  assert.equal(
+    isSameOrigin(
+      "https://manager.example.com",
+      "frontend:3000",
+      "manager.example.com, edge.internal",
+      "https, http",
+      internalURL,
+    ),
+    true,
+  );
+  assert.equal(
+    isSameOrigin("http://manager.example.com", "frontend:3000", "manager.example.com", "https", internalURL),
+    false,
+  );
+  assert.equal(isSameOrigin("not a URL", "localhost:3000", null, null, internalURL), false);
 });
 
 test("proxy request ignores browser secrets and adds server bearer", async () => {
