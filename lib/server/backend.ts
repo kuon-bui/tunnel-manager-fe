@@ -1,6 +1,7 @@
 import "server-only";
 
 import { backendURL, isSameOrigin, proxyRequestInit } from "./backend-core";
+import { rejectedOriginMetadata } from "./origin-diagnostics";
 import { proxyResponseHeaders } from "./proxy-response";
 import { deleteSessionToken, getSessionToken } from "./session";
 
@@ -15,7 +16,10 @@ export function requireSameOrigin(request: Request): Response | undefined {
     )
   ) {
     return undefined;
-  }return Response.json({ error: "forbidden" }, { status: 403 });
+  }
+  
+  console.warn("origin rejected", rejectedOriginMetadata(request));
+  return Response.json({ error: "forbidden" }, { status: 403 });
 }
 
 export async function proxyBackend(request: Request, path: string[], authenticated = true): Promise<Response> {
