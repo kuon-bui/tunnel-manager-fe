@@ -4,6 +4,7 @@ import "./globals.css";
 
 import { Providers } from "@/components/providers";
 import { Toaster } from "@/components/ui/sonner";
+import { SpeedInsights } from "@vercel/speed-insights/next"
 
 const inter = Inter({
   variable: "--font-sans",
@@ -28,6 +29,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} ${geistMono.variable} h-full antialiased`}>
       <body className="min-h-full">
+        <SpeedInsights />
         <Providers>
           {children}
           <Toaster />

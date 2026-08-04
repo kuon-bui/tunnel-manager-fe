@@ -7,6 +7,7 @@ import { LogOut, Network } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 
 import { ChangePasswordDialog } from "@/components/change-password-dialog";
+import { TunnelMark } from "@/components/tunnel-mark";
 import { Button } from "@/components/ui/button";
 import { logout } from "@/lib/api";
 
@@ -44,9 +45,7 @@ export function AppSidebar() {
     <Sidebar collapsible="icon">
       <SidebarHeader>
         <div className="flex items-center gap-2 px-2 py-1.5">
-          <div className="flex size-7 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground">
-            <Network className="size-4" />
-          </div>
+          <TunnelMark className="size-7 shrink-0" />
           <span className="text-sm font-semibold text-sidebar-foreground group-data-[collapsible=icon]:hidden">
             Tunnel Manager
           </span>
