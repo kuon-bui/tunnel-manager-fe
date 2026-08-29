@@ -1,10 +1,19 @@
-import type { Domain } from "@/lib/api";
+import type { Domain, DomainRoute } from "@/lib/api";
 
-export function domainView(domain: Pick<Domain, "managed" | "path">) {
+export function formatRouteSummary(routes: DomainRoute[] | undefined): string {
+  if (!routes?.length) return "—";
+  if (routes.length === 1 && routes[0].path === "/") return "All paths → /";
+  return `${routes.length} routes`;
+}
+
+export function domainView(domain: Pick<Domain, "routes" | "originUrl">) {
+  const routes = domain.routes ?? [];
+  const root = routes.find((route) => route.path === "/");
   return {
-    source: domain.managed ? "Managed" : "Cloudflare sync",
-    path: domain.path || "All paths",
-    canManage: domain.managed,
-    hasProcess: domain.managed,
+    routeSummary: formatRouteSummary(routes),
+    rootOriginUrl: root?.originUrl || domain.originUrl || "—",
+    routes,
+    canManage: true,
+    hasProcess: true,
   };
 }

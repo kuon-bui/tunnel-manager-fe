@@ -1,4 +1,4 @@
-import type { Domain, DomainStatus } from "./api.ts";
+import type { Domain, DomainRoute, DomainStatus } from "./api.ts";
 import type { QueryClient } from "@tanstack/react-query";
 
 function parseObject(data: string): Record<string, unknown> | undefined {
@@ -20,12 +20,32 @@ function isDomainStatus(value: unknown): value is DomainStatus {
   return value === "pending" || value === "active" || value === "error" || value === "stopped";
 }
 
+function parseDomainRoute(value: unknown): DomainRoute | undefined {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) return undefined;
+  const route = value as Record<string, unknown>;
+  if (!(isString(route.id)
+    && isString(route.path)
+    && isString(route.originUrl)
+    && typeof route.stripPrefix === "boolean"
+    && isString(route.createdAt)
+    && isString(route.updatedAt))) return undefined;
+  return {
+    id: route.id,
+    path: route.path,
+    originUrl: route.originUrl,
+    stripPrefix: route.stripPrefix,
+    createdAt: route.createdAt,
+    updatedAt: route.updatedAt,
+  };
+}
+
 export function normalizeDomain(domain: Domain): Domain {
+  const routes = Array.isArray(domain.routes) ? domain.routes : [];
+  const rootOrigin = routes.find((route) => route.path === "/")?.originUrl;
   return {
     ...domain,
-    path: domain.path ?? "",
-    managed: domain.managed ?? true,
-    cloudflareStatus: domain.cloudflareStatus ?? "",
+    routes,
+    originUrl: domain.originUrl || rootOrigin || "",
   };
 }
 
@@ -34,7 +54,6 @@ function parseDomain(value: unknown): Domain | undefined {
   const domain = value as Record<string, unknown>;
   if (!(isString(domain.id)
     && isString(domain.hostname)
-    && isString(domain.originUrl)
     && isString(domain.zoneId)
     && isDomainStatus(domain.status)
     && typeof domain.metricsPort === "number"
@@ -42,10 +61,30 @@ function parseDomain(value: unknown): Domain | undefined {
     && typeof domain.restartCount === "number"
     && isString(domain.createdAt)
     && isString(domain.updatedAt))) return undefined;
-  if (domain.path !== undefined && !isString(domain.path)) return undefined;
-  if (domain.managed !== undefined && typeof domain.managed !== "boolean") return undefined;
-  if (domain.cloudflareStatus !== undefined && !isString(domain.cloudflareStatus)) return undefined;
-  return normalizeDomain(domain as unknown as Domain);
+  if (domain.originUrl !== undefined && !isString(domain.originUrl)) return undefined;
+  if (domain.routes !== undefined && !Array.isArray(domain.routes)) return undefined;
+
+  const routes = Array.isArray(domain.routes)
+    ? domain.routes.map(parseDomainRoute)
+    : [];
+  if (!routes.every((route): route is DomainRoute => route !== undefined)) return undefined;
+
+  return normalizeDomain({
+    id: domain.id,
+    hostname: domain.hostname,
+    originUrl: isString(domain.originUrl) ? domain.originUrl : "",
+    zoneId: domain.zoneId,
+    status: domain.status,
+    metricsPort: domain.metricsPort,
+    pid: domain.pid,
+    restartCount: domain.restartCount,
+    ...(isString(domain.lastError) ? { lastError: domain.lastError } : {}),
+    createdAt: domain.createdAt,
+    updatedAt: domain.updatedAt,
+    ...(isString(domain.cloudflareTunnelId) ? { cloudflareTunnelId: domain.cloudflareTunnelId } : {}),
+    ...(isString(domain.dnsRecordId) ? { dnsRecordId: domain.dnsRecordId } : {}),
+    routes,
+  });
 }
 
 export function parseDomainListEvent(data: string): Domain[] | undefined {

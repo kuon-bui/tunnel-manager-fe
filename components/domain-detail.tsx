@@ -2,18 +2,19 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Info, RotateCw, Square } from "lucide-react";
+import { ArrowLeft, RotateCw, Square } from "lucide-react";
 import { toast } from "sonner";
 
 import { DeleteConfirmDialog } from "@/components/delete-confirm-dialog";
-import { EditOriginDialog } from "@/components/edit-origin-dialog";
+import { EditRoutesDialog } from "@/components/edit-routes-dialog";
 import { LogsPanel } from "@/components/logs-panel";
 import { MetricsPanel } from "@/components/metrics-panel";
 import { StatusBadge } from "@/components/status-badge";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useDomain, useRestartDomain, useStopDomain } from "@/hooks/use-domains";
 import { ApiError } from "@/lib/api";
@@ -81,76 +82,91 @@ export function DomainDetail({ id }: { id: string }) {
             <StatusBadge status={domain.status} />
           </div>
         </div>
-        {view.canManage && (
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleStop}
-              disabled={stopDomain.isPending || domain.status === "stopped"}
-            >
-              <Square />
-              Stop
-            </Button>
-            <Button variant="outline" size="sm" onClick={handleRestart} disabled={restartDomain.isPending}>
-              <RotateCw />
-              Restart
-            </Button>
-            <DeleteConfirmDialog id={id} hostname={domain.hostname} onDeleted={() => router.push("/")} />
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleStop}
+            disabled={stopDomain.isPending || domain.status === "stopped"}
+          >
+            <Square />
+            Stop
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleRestart} disabled={restartDomain.isPending}>
+            <RotateCw />
+            Restart
+          </Button>
+          <DeleteConfirmDialog id={id} hostname={domain.hostname} onDeleted={() => router.push("/")} />
+        </div>
       </div>
-
-      {!view.canManage && (
-        <Alert>
-          <Info />
-          <AlertTitle>Cloudflare-managed domain</AlertTitle>
-          <AlertDescription>
-            This domain is synced and read-only. Manage it in Cloudflare.
-          </AlertDescription>
-        </Alert>
-      )}
 
       <Card>
         <CardHeader className="flex items-center justify-between">
           <CardTitle>Configuration</CardTitle>
-          {view.canManage && <EditOriginDialog id={id} currentOriginUrl={domain.originUrl} />}
+          <EditRoutesDialog id={id} routes={view.routes} fallbackOriginUrl={domain.originUrl} />
         </CardHeader>
-        <CardContent className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-4">
-          <div>
-            <p className="text-muted-foreground">Origin URL</p>
-            <p className="font-medium">{domain.originUrl}</p>
-          </div>
-          <div>
-            <p className="text-muted-foreground">Path</p>
-            <p className="font-medium">{view.path}</p>
-          </div>
-          <div>
-            <p className="text-muted-foreground">Source</p>
-            <p className="font-medium">{view.source}</p>
-          </div>
-          <div>
-            <p className="text-muted-foreground">Cloudflare status</p>
-            <p className="font-medium">{domain.cloudflareStatus || "—"}</p>
-          </div>
-          <div>
-            <p className="text-muted-foreground">Metrics port</p>
-            <p className="font-medium">{view.hasProcess ? domain.metricsPort : "—"}</p>
-          </div>
-          <div>
-            <p className="text-muted-foreground">PID</p>
-            <p className="font-medium">{view.hasProcess && domain.pid ? domain.pid : "—"}</p>
-          </div>
-          <div>
-            <p className="text-muted-foreground">Restarts</p>
-            <p className="font-medium">{view.hasProcess ? domain.restartCount : "—"}</p>
-          </div>
-          {domain.lastError && (
-            <div className="col-span-2 sm:col-span-4">
-              <p className="text-muted-foreground">Last error</p>
-              <p className="font-medium text-destructive">{domain.lastError}</p>
+        <CardContent className="grid gap-6 text-sm">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+            <div>
+              <p className="text-muted-foreground">Root origin</p>
+              <p className="font-medium">{view.rootOriginUrl}</p>
             </div>
-          )}
+            <div>
+              <p className="text-muted-foreground">Routes</p>
+              <p className="font-medium">{view.routeSummary}</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground">Metrics port</p>
+              <p className="font-medium">{view.hasProcess ? domain.metricsPort : "—"}</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground">PID</p>
+              <p className="font-medium">{view.hasProcess && domain.pid ? domain.pid : "—"}</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground">Restarts</p>
+              <p className="font-medium">{view.hasProcess ? domain.restartCount : "—"}</p>
+            </div>
+            {domain.lastError && (
+              <div className="col-span-2 sm:col-span-4">
+                <p className="text-muted-foreground">Last error</p>
+                <p className="font-medium text-destructive">{domain.lastError}</p>
+              </div>
+            )}
+          </div>
+
+          <div className="rounded-lg border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Path</TableHead>
+                  <TableHead>Origin URL</TableHead>
+                  <TableHead>Strip prefix</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {view.routes.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={3} className="text-muted-foreground">
+                      No routes returned by the backend.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  view.routes.map((route) => (
+                    <TableRow key={route.id || `${route.path}-${route.originUrl}`}>
+                      <TableCell className="font-medium">{route.path}</TableCell>
+                      <TableCell className="text-muted-foreground">{route.originUrl}</TableCell>
+                      <TableCell>
+                        <Badge variant={route.stripPrefix ? "secondary" : "outline"}>
+                          {route.stripPrefix ? "Yes" : "No"}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
 

@@ -16,9 +16,6 @@ const domain: Domain = {
   id: "domain-1",
   hostname: "app.example.com",
   originUrl: "http://localhost:8080",
-  path: "",
-  managed: true,
-  cloudflareStatus: "",
   zoneId: "zone-1",
   status: "active",
   metricsPort: 20500,
@@ -26,6 +23,16 @@ const domain: Domain = {
   restartCount: 0,
   createdAt: "2026-07-29T00:00:00Z",
   updatedAt: "2026-07-29T00:00:00Z",
+  routes: [
+    {
+      id: "route-1",
+      path: "/",
+      originUrl: "http://localhost:8080",
+      stripPrefix: false,
+      createdAt: "2026-08-29T00:00:00Z",
+      updatedAt: "2026-08-29T00:00:00Z",
+    },
+  ],
 };
 
 test("domain SSE cancels stale REST work and removes deleted detail cache", async () => {
