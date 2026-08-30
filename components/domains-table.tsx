@@ -2,7 +2,6 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 
 import { StatusBadge } from "@/components/status-badge";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { Domain } from "@/lib/api";
@@ -23,9 +22,8 @@ export function DomainsTable({ domains }: { domains: Domain[] }) {
         <TableHeader>
           <TableRow>
             <TableHead>Hostname</TableHead>
-            <TableHead>Origin</TableHead>
-            <TableHead>Path</TableHead>
-            <TableHead>Source</TableHead>
+            <TableHead>Root origin</TableHead>
+            <TableHead>Routes</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Metrics port</TableHead>
             <TableHead>PID</TableHead>
@@ -40,11 +38,8 @@ export function DomainsTable({ domains }: { domains: Domain[] }) {
             return (
               <TableRow key={domain.id}>
                 <TableCell className="font-medium">{domain.hostname}</TableCell>
-                <TableCell className="text-muted-foreground">{domain.originUrl}</TableCell>
-                <TableCell className="text-muted-foreground">{view.path}</TableCell>
-                <TableCell>
-                  <Badge variant={domain.managed ? "secondary" : "outline"}>{view.source}</Badge>
-                </TableCell>
+                <TableCell className="text-muted-foreground">{view.rootOriginUrl}</TableCell>
+                <TableCell className="text-muted-foreground">{view.routeSummary}</TableCell>
                 <TableCell>
                   <StatusBadge status={domain.status} />
                 </TableCell>

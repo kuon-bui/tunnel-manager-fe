@@ -9,10 +9,11 @@ import {
   getMetrics,
   listCloudflareZones,
   listDomains,
+  replaceRoutes,
   restartDomain,
   stopDomain,
-  updateOrigin,
 } from "@/lib/api";
+import type { ReplaceRoutesInput } from "@/lib/api-config";
 import { subscribeDomainDetail } from "@/lib/domain-stream";
 
 export const domainKeys = {
@@ -84,11 +85,11 @@ export function useCreateDomain() {
   });
 }
 
-export function useUpdateOrigin() {
+export function useReplaceRoutes() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, originUrl }: { id: string; originUrl: string }) =>
-      updateOrigin(id, originUrl),
+    mutationFn: ({ id, routes }: { id: string; routes: ReplaceRoutesInput["routes"] }) =>
+      replaceRoutes(id, { routes }),
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: domainKeys.all });
       queryClient.invalidateQueries({ queryKey: domainKeys.detail(variables.id) });

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 
+import { DomainRoutesEditor } from "@/components/domain-routes-editor";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -19,12 +20,17 @@ import { Label } from "@/components/ui/label";
 import { useCloudflareZones, useCreateDomain } from "@/hooks/use-domains";
 import { ApiError } from "@/lib/api";
 import { createDomainPayload, hostnameForZone, selectedZoneID } from "@/lib/api-config";
+import {
+  defaultEditableRoutes,
+  toRouteInputs,
+  validateEditableRoutes,
+  type EditableRoute,
+} from "@/lib/domain-routes";
 
 export function CreateDomainDialog() {
   const [open, setOpen] = useState(false);
   const [hostname, setHostname] = useState("");
-  const [originUrl, setOriginUrl] = useState("");
-  const [path, setPath] = useState("");
+  const [routes, setRoutes] = useState<EditableRoute[]>(() => defaultEditableRoutes());
   const [zoneId, setZoneId] = useState("");
   const createDomain = useCreateDomain();
   const zones = useCloudflareZones(open);
@@ -32,20 +38,28 @@ export function CreateDomainDialog() {
   const selectedZone = zones.data?.find((zone) => zone.id === effectiveZoneId);
   const fullHostname = hostnameForZone(hostname, selectedZone?.name ?? "");
   const hostnameOutsideZone = Boolean(hostname.trim() && selectedZone && !fullHostname);
+  const routeError = validateEditableRoutes(routes);
+
+  function resetForm() {
+    setHostname("");
+    setRoutes(defaultEditableRoutes());
+    setZoneId("");
+  }
 
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     if (!fullHostname) return;
+    if (routeError) {
+      toast.error(routeError);
+      return;
+    }
     createDomain.mutate(
-      createDomainPayload(fullHostname, originUrl, path, effectiveZoneId),
+      createDomainPayload(fullHostname, effectiveZoneId, toRouteInputs(routes)),
       {
         onSuccess: () => {
           toast.success(`Domain "${fullHostname}" created`);
           setOpen(false);
-          setHostname("");
-          setOriginUrl("");
-          setPath("");
-          setZoneId("");
+          resetForm();
         },
         onError: (err) => {
           toast.error(err instanceof ApiError ? err.message : "Failed to create domain");
@@ -55,17 +69,20 @@ export function CreateDomainDialog() {
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={(next) => {
+      setOpen(next);
+      if (!next) resetForm();
+    }}>
       <DialogTrigger render={<Button />}>
         <Plus />
         Add domain
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>Add domain</DialogTitle>
             <DialogDescription>
-              Create a Cloudflare Tunnel-backed domain routing to an origin URL.
+              Create a Cloudflare Tunnel-backed hostname with one or more path routes.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
@@ -91,29 +108,6 @@ export function CreateDomainDialog() {
               </p>
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="origin-url">Origin URL</Label>
-              <Input
-                id="origin-url"
-                placeholder="http://localhost:3001"
-                value={originUrl}
-                onChange={(e) => setOriginUrl(e.target.value)}
-                required
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="path">Path (optional)</Label>
-              <Input
-                id="path"
-                aria-describedby="path-description"
-                placeholder="/api/.*"
-                value={path}
-                onChange={(event) => setPath(event.target.value)}
-              />
-              <p id="path-description" className="text-xs text-muted-foreground">
-                Leave empty to route every path for this hostname.
-              </p>
-            </div>
-            <div className="grid gap-2">
               <Label htmlFor="zone">Cloudflare zone</Label>
               <select
                 id="zone"
@@ -132,11 +126,13 @@ export function CreateDomainDialog() {
               </select>
               {zones.isError && <p className="text-xs text-destructive">Failed to load Cloudflare zones.</p>}
             </div>
+            <DomainRoutesEditor routes={routes} onChange={setRoutes} disabled={createDomain.isPending} />
+            {routeError && <p className="text-xs text-destructive">{routeError}</p>}
           </div>
           <DialogFooter>
             <Button
               type="submit"
-              disabled={createDomain.isPending || !fullHostname || zones.isPending || zones.isError}
+              disabled={createDomain.isPending || !fullHostname || Boolean(routeError) || zones.isPending || zones.isError}
             >
               {createDomain.isPending ? "Creating…" : "Create"}
             </Button>

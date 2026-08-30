@@ -8,13 +8,19 @@ import {
   parseMetricsEvent,
 } from "./domain-stream-core.ts";
 
+const route = {
+  id: "route-1",
+  path: "/",
+  originUrl: "http://localhost:8080",
+  stripPrefix: false,
+  createdAt: "2026-08-29T00:00:00Z",
+  updatedAt: "2026-08-29T00:00:00Z",
+};
+
 const domain = {
   id: "domain-1",
   hostname: "app.example.com",
   originUrl: "http://localhost:8080",
-  path: "/*",
-  managed: true,
-  cloudflareStatus: "active",
   zoneId: "zone-1",
   status: "active",
   metricsPort: 20500,
@@ -22,23 +28,43 @@ const domain = {
   restartCount: 0,
   createdAt: "2026-07-29T00:00:00Z",
   updatedAt: "2026-07-29T00:00:00Z",
+  routes: [route],
 };
 
-test("domain stream accepts full snapshots and preserves frontend fields", () => {
+test("domain stream accepts full snapshots with routes", () => {
   assert.deepEqual(parseDomainListEvent(JSON.stringify({ items: [domain], nextCursor: "" })), [domain]);
 });
 
-test("domain stream normalizes fields absent from managed backend snapshots", () => {
-  const managedDomain = { ...domain } as Partial<typeof domain>;
-  delete managedDomain.path;
-  delete managedDomain.managed;
-  delete managedDomain.cloudflareStatus;
-  assert.deepEqual(parseDomainListEvent(JSON.stringify({ items: [managedDomain], nextCursor: "" })), [
-    { ...managedDomain, path: "", managed: true, cloudflareStatus: "" },
+test("domain stream normalizes missing routes and derives origin from root route", () => {
+  const withoutOrigin = {
+    ...domain,
+    originUrl: undefined,
+    routes: [
+      {
+        id: "route-api",
+        path: "/api",
+        originUrl: "http://localhost:9000",
+        stripPrefix: true,
+        createdAt: "2026-08-29T00:00:00Z",
+        updatedAt: "2026-08-29T00:00:00Z",
+      },
+      route,
+    ],
+  };
+  assert.deepEqual(parseDomainListEvent(JSON.stringify({ items: [withoutOrigin], nextCursor: "" })), [
+    {
+      ...domain,
+      originUrl: "http://localhost:8080",
+      routes: withoutOrigin.routes,
+    },
   ]);
 });
 
-test("domain stream rejects malformed snapshots", () => {
+test("domain stream rejects malformed route snapshots", () => {
+  assert.equal(parseDomainListEvent(JSON.stringify({
+    items: [{ ...domain, routes: [{ path: "/" }] }],
+    nextCursor: "",
+  })), undefined);
   assert.equal(parseDomainListEvent('{"items":[{"id":1}]}'), undefined);
   assert.equal(parseDomainListEvent("not json"), undefined);
 });

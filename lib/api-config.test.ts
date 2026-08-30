@@ -6,28 +6,47 @@ import {
   DOMAINS_PATH,
   createDomainPayload,
   hostnameForZone,
+  replaceRoutesPayload,
   selectedZoneID,
   updateOriginPayload,
-} from "./api-config";
+} from "./api-config.ts";
 
 test("domain API uses same-origin backend proxy", () => {
   assert.equal(DOMAIN_API_BASE_URL, "/api");
   assert.equal(DOMAINS_PATH, "/domains");
 });
 
-test("create domain uses backend zone contract", () => {
+test("create domain uses multi-route backend contract", () => {
   assert.deepEqual(
-    createDomainPayload("app.example.com", "http://localhost:3001", "/api/.*", "zone-1"),
+    createDomainPayload("app.example.com", "zone-1", [
+      { path: "/api", originUrl: "http://localhost:8080", stripPrefix: true },
+      { path: "/", originUrl: "http://localhost:3001" },
+    ]),
     {
       hostname: "app.example.com",
-      originUrl: "http://localhost:3001",
-      path: "/api/.*",
       zoneId: "zone-1",
+      routes: [
+        { path: "/api", originUrl: "http://localhost:8080", stripPrefix: true },
+        { path: "/", originUrl: "http://localhost:3001" },
+      ],
     },
   );
 });
 
-test("update origin uses backend contract", () => {
+test("replace routes uses backend contract", () => {
+  assert.deepEqual(
+    replaceRoutesPayload([
+      { path: "/", originUrl: "http://localhost:5173", stripPrefix: false },
+    ]),
+    {
+      routes: [
+        { path: "/", originUrl: "http://localhost:5173", stripPrefix: false },
+      ],
+    },
+  );
+});
+
+test("update origin uses deprecated root-only backend contract", () => {
   assert.deepEqual(updateOriginPayload("http://localhost:3001"), {
     originUrl: "http://localhost:3001",
   });

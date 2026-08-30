@@ -4,6 +4,7 @@ import {
   DOMAIN_API_BASE_URL,
   DOMAINS_PATH,
   type CreateDomainInput,
+  type ReplaceRoutesInput,
   updateOriginPayload,
 } from "@/lib/api-config";
 import { normalizeDomain } from "@/lib/domain-stream-core";
@@ -11,13 +12,19 @@ import { notifySessionTokenChanged } from "@/lib/session-events";
 
 export type DomainStatus = "pending" | "active" | "error" | "stopped";
 
+export interface DomainRoute {
+  id: string;
+  path: string;
+  originUrl: string;
+  stripPrefix: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Domain {
   id: string;
   hostname: string;
   originUrl: string;
-  path: string;
-  managed: boolean;
-  cloudflareStatus: string;
   zoneId: string;
   status: DomainStatus;
   metricsPort: number;
@@ -28,6 +35,7 @@ export interface Domain {
   updatedAt: string;
   cloudflareTunnelId?: string;
   dnsRecordId?: string;
+  routes: DomainRoute[];
 }
 
 export interface CloudflareZone {
@@ -118,6 +126,11 @@ export async function createDomain(input: CreateDomainInput): Promise<Domain> {
   return normalizeDomain(await unwrap(client.post<Domain>(DOMAINS_PATH, input)));
 }
 
+export async function replaceRoutes(id: string, input: ReplaceRoutesInput): Promise<Domain> {
+  return normalizeDomain(await unwrap(client.put<Domain>(`${DOMAINS_PATH}/${id}/routes`, input)));
+}
+
+/** @deprecated Prefer replaceRoutes; only updates the `/` route origin. */
 export async function updateOrigin(id: string, originUrl: string): Promise<Domain> {
   return normalizeDomain(await unwrap(client.put<Domain>(`${DOMAINS_PATH}/${id}`, updateOriginPayload(originUrl))));
 }
