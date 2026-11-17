@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, RotateCw, Square } from "lucide-react";
+import { ArrowLeft, Play, RotateCw, Square } from "lucide-react";
 import { toast } from "sonner";
 
 import { DeleteConfirmDialog } from "@/components/delete-confirm-dialog";
@@ -16,7 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useDomain, useRestartDomain, useStopDomain } from "@/hooks/use-domains";
+import { useDomain, useRestartDomain, useStartDomain, useStopDomain } from "@/hooks/use-domains";
 import { ApiError } from "@/lib/api";
 import { domainView } from "@/lib/domain-view";
 
@@ -24,12 +24,20 @@ export function DomainDetail({ id }: { id: string }) {
   const router = useRouter();
   const { data: domain, isPending, isError, error } = useDomain(id);
   const stopDomain = useStopDomain();
+  const startDomain = useStartDomain();
   const restartDomain = useRestartDomain();
 
   function handleStop() {
     stopDomain.mutate(id, {
       onSuccess: () => toast.success("Domain stopped"),
       onError: (err) => toast.error(err instanceof ApiError ? err.message : "Failed to stop domain"),
+    });
+  }
+
+  function handleStart() {
+    startDomain.mutate(id, {
+      onSuccess: () => toast.success("Domain started"),
+      onError: (err) => toast.error(err instanceof ApiError ? err.message : "Failed to start domain"),
     });
   }
 
@@ -68,6 +76,7 @@ export function DomainDetail({ id }: { id: string }) {
   }
 
   const view = domainView(domain);
+  const canStart = domain.status === "stopped" || domain.status === "error";
 
   return (
     <div className="flex flex-col gap-6">
@@ -83,15 +92,17 @@ export function DomainDetail({ id }: { id: string }) {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleStop}
-            disabled={stopDomain.isPending || domain.status === "stopped"}
-          >
-            <Square />
-            Stop
-          </Button>
+          {canStart ? (
+            <Button variant="outline" size="sm" onClick={handleStart} disabled={startDomain.isPending}>
+              <Play />
+              Start
+            </Button>
+          ) : (
+            <Button variant="outline" size="sm" onClick={handleStop} disabled={stopDomain.isPending}>
+              <Square />
+              Stop
+            </Button>
+          )}
           <Button variant="outline" size="sm" onClick={handleRestart} disabled={restartDomain.isPending}>
             <RotateCw />
             Restart

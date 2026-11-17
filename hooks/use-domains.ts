@@ -11,6 +11,7 @@ import {
   listDomains,
   replaceRoutes,
   restartDomain,
+  startDomain,
   stopDomain,
 } from "@/lib/api";
 import type { ReplaceRoutesInput } from "@/lib/api-config";
@@ -111,6 +112,17 @@ export function useStopDomain() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => stopDomain(id),
+    onSuccess: (_data, id) => {
+      queryClient.invalidateQueries({ queryKey: domainKeys.all });
+      queryClient.invalidateQueries({ queryKey: domainKeys.detail(id) });
+    },
+  });
+}
+
+export function useStartDomain() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => startDomain(id),
     onSuccess: (_data, id) => {
       queryClient.invalidateQueries({ queryKey: domainKeys.all });
       queryClient.invalidateQueries({ queryKey: domainKeys.detail(id) });

@@ -143,6 +143,10 @@ export function stopDomain(id: string): Promise<void> {
   return unwrap(client.post<void>(`${DOMAINS_PATH}/${id}/stop`));
 }
 
+export function startDomain(id: string): Promise<void> {
+  return unwrap(client.post<void>(`${DOMAINS_PATH}/${id}/start`));
+}
+
 export function restartDomain(id: string): Promise<void> {
   return unwrap(client.post<void>(`${DOMAINS_PATH}/${id}/restart`));
 }
